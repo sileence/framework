@@ -1639,6 +1639,48 @@ class SupportCollectionTest extends PHPUnit_Framework_TestCase
             })->toArray()
         );
     }
+
+    public function testDivideCollectionByKey()
+    {
+        $courses = new Collection([
+            ['free' => true, 'title' => 'Basic'],
+            ['free' => false, 'title' => 'Premium']
+        ]);
+
+        list($free, $premium) = $courses->divide('free');
+
+        $this->assertSame($free->toArray(), [['free' => true, 'title' => 'Basic']]);
+
+        $this->assertSame($premium->toArray(), [['free' => false, 'title' => 'Premium']]);
+    }
+
+    public function testDivideCollectionWithClosure()
+    {
+        $courses = new Collection([
+            ['number' => 10], ['number' => 50], ['number' => 100]
+        ]);
+
+        list($low, $high) = $courses->divide(function ($item) {
+            return $item['number'] < 100;
+        });
+
+        $this->assertSame($low->toArray(), [['number' => 10], ['number' => 50]]);
+
+        $this->assertSame($high->toArray(), [['number' => 100]]);
+    }
+
+    public function testDivideCollectionPreservingKeys()
+    {
+        $courses = new Collection([
+            'a' => ['free' => true], 'b' => ['free' => false], 'c' => ['free' => true],
+        ]);
+
+        list($free, $premium) = $courses->divide('free', true);
+
+        $this->assertSame($free->toArray(), ['a' => ['free' => true], 'c' => ['free' => true]]);
+
+        $this->assertSame($premium->toArray(), ['b' => ['free' => false]]);
+    }
 }
 
 class TestAccessorEloquentTestStub

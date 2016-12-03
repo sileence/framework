@@ -82,6 +82,25 @@ class Collection implements ArrayAccess, Arrayable, Countable, IteratorAggregate
     }
 
     /**
+     * Divide a collection in two based on the given attribute value or custom function.
+     *
+     * @param  callable|string  $callable
+     * @return array
+     */
+    public function divide($callable = null, $preserveKeys = false)
+    {
+        $result = [new static, new static];
+
+        $callable = $this->valueRetriever($callable);
+
+        foreach ($this->items as $key => $item) {
+            $result[$callable($item) ? 0 : 1][$preserveKeys ? $key : null] = $item;
+        }
+
+        return $result;
+    }
+
+    /**
      * Get the median of a given key.
      *
      * @param  null $key
