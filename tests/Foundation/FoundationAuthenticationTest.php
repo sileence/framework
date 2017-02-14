@@ -54,27 +54,27 @@ class FoundationAuthenticationTest extends TestCase
         m::close();
     }
 
-    public function testSeeIsAuthenticated()
+    public function testAssertAuthentication()
     {
         $this->mockGuard()
             ->shouldReceive('check')
             ->once()
             ->andReturn(true);
 
-        $this->seeIsAuthenticated();
+        $this->assertAuthentication();
     }
 
-    public function testDontSeeIsAuthenticated()
+    public function testAssertGuest()
     {
         $this->mockGuard()
             ->shouldReceive('check')
             ->once()
             ->andReturn(false);
 
-        $this->dontSeeIsAuthenticated();
+        $this->assertGuest();
     }
 
-    public function testSeeIsAuthenticatedAs()
+    public function testAssertAuthenticatedAs()
     {
         $expected = m::mock(Authenticatable::class);
         $expected->shouldReceive('getAuthIdentifier')
@@ -89,7 +89,26 @@ class FoundationAuthenticationTest extends TestCase
         $user->shouldReceive('getAuthIdentifier')
             ->andReturn('1');
 
-        $this->seeIsAuthenticatedAs($user);
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function testAssertCredentials()
+    {
+        $this->setupProvider($this->credentials);
+
+        $this->assertCredentials($this->credentials);
+    }
+
+    public function testAssertCredentialsMissing()
+    {
+        $credentials = [
+            'email' => 'invalid',
+            'password' => 'credentials',
+        ];
+
+        $this->setupProvider($credentials);
+
+        $this->assertCredentialsMissing($credentials);
     }
 
     protected function setupProvider(array $credentials)
@@ -110,24 +129,5 @@ class FoundationAuthenticationTest extends TestCase
             ->shouldReceive('getProvider')
             ->once()
             ->andReturn($provider);
-    }
-
-    public function testSeeCredentials()
-    {
-        $this->setupProvider($this->credentials);
-
-        $this->seeCredentials($this->credentials);
-    }
-
-    public function testDontSeeCredentials()
-    {
-        $credentials = [
-            'email' => 'invalid',
-            'password' => 'credentials',
-        ];
-
-        $this->setupProvider($credentials);
-
-        $this->dontSeeCredentials($credentials);
     }
 }
