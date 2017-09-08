@@ -3,19 +3,21 @@
 namespace Illuminate\Foundation\Testing\Concerns;
 
 use Exception;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Contracts\Debug\ExceptionHandler;
+use Illuminate\Auth\Access\AuthorizationException;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 trait InteractsWithExceptionHandling
 {
     /**
-     * The previous exception handler.
+     * The original exception handler.
      *
      * @var ExceptionHandler|null
      */
-    protected $previousExceptionHandler;
+    protected $originalExceptionHandler;
 
     /**
      * Restore exception handling.
@@ -24,8 +26,8 @@ trait InteractsWithExceptionHandling
      */
     protected function withExceptionHandling()
     {
-        if ($this->previousExceptionHandler) {
-            $this->app->instance(ExceptionHandler::class, $this->previousExceptionHandler);
+        if ($this->originalExceptionHandler) {
+            $this->app->instance(ExceptionHandler::class, $this->originalExceptionHandler);
         }
 
         return $this;
@@ -53,6 +55,26 @@ trait InteractsWithExceptionHandling
     }
 
     /**
+     * Only handle authentication exceptions via the exception handler.
+     *
+     * @return $this
+     */
+    public function handleAuthenticationExceptions()
+    {
+        return $this->handleExceptions([AuthenticationException::class]);
+    }
+
+    /**
+     * Only handle authorization exceptions via the exception handler.
+     *
+     * @return $this
+     */
+    public function handleAuthorizationExceptions()
+    {
+        return $this->handleExceptions([AuthorizationException::class]);
+    }
+
+    /**
      * Disable exception handling for the test.
      *
      * @param  array  $except
@@ -60,11 +82,13 @@ trait InteractsWithExceptionHandling
      */
     protected function withoutExceptionHandling(array $except = [])
     {
-        $this->previousExceptionHandler = app(ExceptionHandler::class);
+        if ($this->originalExceptionHandler == null) {
+            $this->originalExceptionHandler = app(ExceptionHandler::class);
+        }
 
-        $this->app->instance(ExceptionHandler::class, new class($this->previousExceptionHandler, $except) implements ExceptionHandler {
+        $this->app->instance(ExceptionHandler::class, new class($this->originalExceptionHandler, $except) implements ExceptionHandler {
             protected $except;
-            protected $previousHandler;
+            protected $originalHandler;
 
             /**
              * Create a new class instance.
@@ -73,10 +97,10 @@ trait InteractsWithExceptionHandling
              * @param  array  $except
              * @return void
              */
-            public function __construct($previousHandler, $except = [])
+            public function __construct($originalHandler, $except = [])
             {
                 $this->except = $except;
-                $this->previousHandler = $previousHandler;
+                $this->originalHandler = $originalHandler;
             }
 
             /**
@@ -109,7 +133,7 @@ trait InteractsWithExceptionHandling
 
                 foreach ($this->except as $class) {
                     if ($e instanceof $class) {
-                        return $this->previousHandler->render($request, $e);
+                        return $this->originalHandler->render($request, $e);
                     }
                 }
 
