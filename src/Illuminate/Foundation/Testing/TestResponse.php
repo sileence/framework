@@ -657,6 +657,19 @@ class TestResponse
     }
 
     /**
+     * Get a piece of data from the view.
+     *
+     * @param  string  $key
+     * @return mixed
+     */
+    public function viewData($key)
+    {
+        $this->ensureResponseHasView();
+
+        return $this->original->$key;
+    }
+
+    /**
      * Assert that the response view has a given list of bound data.
      *
      * @param  array  $bindings
